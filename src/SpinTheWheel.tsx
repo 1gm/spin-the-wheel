@@ -1,26 +1,121 @@
-import { useState, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { Wheel } from 'spin-wheel';
 import confetti from 'canvas-confetti';
-import './SpinTheWheel.css';
 
 interface SpinTheWheelItem {
     name: string;
-    color?: string;
+    color: string;
+    image?: HTMLImageElement | string;
 }
 
 interface SpinTheWheelProps {
     items: SpinTheWheelItem[];
-    alwaysChooseItemWithName?: string;
+    winningItemName: string;
+    duration?: number;
+    numberOfRevolutions?: number;
+    direction?: 1 | -1;
 }
 
-export default function SpinTheWheel({ items, alwaysChooseItemWithName }: SpinTheWheelProps) {
-    const [isSpinning, setIsSpinning] = useState(false);
-    const [selectedItem, setSelectedItem] = useState<string | null>(null);
-    const [rotation, setRotation] = useState(0);
-    const wheelRef = useRef<HTMLDivElement>(null);
+export default function SpinTheWheel({
+    items,
+    winningItemName,
+    duration = 4000,
+    numberOfRevolutions = 2,
+    direction = 1,
+}: SpinTheWheelProps) {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const wheelRef = useRef<Wheel | null>(null);
+    const imagesRef = useRef<Map<string, HTMLImageElement>>(new Map());
+    const [imagesReady, setImagesReady] = useState(false);
     const hasCelebratedRef = useRef(false);
+    const [isCelebrating, setIsCelebrating] = useState<boolean>(false);
 
-    const anglePerItem = 360 / items.length;
-    const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2', '#F8B739', '#52BE80'];
+    // Preload images
+    useEffect(() => {
+        setImagesReady(false);
+        imagesRef.current.clear();
+
+        const imagePromises: Promise<void>[] = [];
+
+        items.forEach((item) => {
+            if (item.image && typeof item.image === 'string') {
+                const img = new Image();
+                const promise = new Promise<void>((resolve) => {
+                    img.onload = () => {
+                        imagesRef.current.set(item.name, img);
+                        resolve();
+                    };
+                    img.onerror = () => {
+                        // Continue even if image fails to load
+                        resolve();
+                    };
+                });
+                img.src = item.image;
+                imagePromises.push(promise);
+            } else if (item.image instanceof HTMLImageElement) {
+                imagesRef.current.set(item.name, item.image);
+            }
+        });
+
+        if (imagePromises.length > 0) {
+            Promise.all(imagePromises).then(() => {
+                setImagesReady(true);
+            });
+        } else {
+            setImagesReady(true);
+        }
+    }, [items]);
+
+    // Initialize wheel
+    useEffect(() => {
+        if (!containerRef.current || !imagesReady) return;
+
+        // Convert items to spin-wheel format
+        const wheelItems = items.map((item) => {
+            const wheelItem: {
+                label: string;
+                backgroundColor?: string;
+                image?: HTMLImageElement;
+            } = {
+                label: item.name,
+            };
+
+            if (item.color) {
+                wheelItem.backgroundColor = item.color;
+            }
+
+            if (item.image) {
+                if (item.image instanceof HTMLImageElement) {
+                    wheelItem.image = item.image;
+                } else if (typeof item.image === 'string') {
+                    const loadedImage = imagesRef.current.get(item.name);
+                    if (loadedImage) {
+                        wheelItem.image = loadedImage;
+                    }
+                }
+            }
+
+            return wheelItem;
+        });
+
+        // Create wheel instance
+        const wheel = new Wheel(containerRef.current, {
+            items: wheelItems,
+            isInteractive: false, // Disable manual spinning since we control it
+            itemLabelColors: ['#fff'],
+            onRest: celebrate,
+        });
+
+        wheelRef.current = wheel;
+
+        // Cleanup
+        return () => {
+            if (wheelRef.current) {
+                wheelRef.current.remove();
+                wheelRef.current = null;
+            }
+        };
+    }, [items, imagesReady]);
 
     const playCelebrationSound = () => {
         const audioContext = new (
@@ -58,6 +153,7 @@ export default function SpinTheWheel({ items, alwaysChooseItemWithName }: SpinTh
             const timeLeft = animationEnd - Date.now();
 
             if (timeLeft <= 0) {
+                setIsCelebrating(false);
                 return clearInterval(interval);
             }
 
@@ -76,11 +172,11 @@ export default function SpinTheWheel({ items, alwaysChooseItemWithName }: SpinTh
         }, 250);
     };
 
-    const celebrate = (itemName: string) => {
+    const celebrate = () => {
         if (hasCelebratedRef.current) return;
         hasCelebratedRef.current = true;
 
-        setSelectedItem(itemName);
+        setIsCelebrating(true);
         triggerConfetti();
         playCelebrationSound();
 
@@ -89,132 +185,84 @@ export default function SpinTheWheel({ items, alwaysChooseItemWithName }: SpinTh
         }, 3000);
     };
 
-    const spin = () => {
-        if (isSpinning || items.length === 0) return;
+    // Function to handle spin button click
+    const handleSpin = () => {
+        if (!wheelRef.current) return;
 
-        setIsSpinning(true);
-        setSelectedItem(null);
-        hasCelebratedRef.current = false;
+        // Find the index of the winning item
+        const winningItemIndex = items.findIndex(
+            (item) => item.name === winningItemName,
+        );
 
-        // Calculate target item index
-        let targetIndex = 0;
-        if (alwaysChooseItemWithName) {
-            targetIndex = items.findIndex((item) => item.name === alwaysChooseItemWithName);
-            if (targetIndex === -1) {
-                targetIndex = 0;
-            }
-        } else {
-            targetIndex = Math.floor(Math.random() * items.length);
+        if (winningItemIndex === -1) {
+            console.warn(
+                `Winning item "${winningItemName}" not found in items list.`,
+            );
+            return;
         }
 
-        // Calculate the center angle of the target segment in the wheel's coordinate system
-        // Segment 0: 0 to anglePerItem, center at anglePerItem/2
-        // Segment 1: anglePerItem to 2*anglePerItem, center at anglePerItem + anglePerItem/2
-        // etc.
-        const targetSegmentCenter = targetIndex * anglePerItem + anglePerItem / 2;
-
-        // The pointer is fixed at 0 degrees (top)
-        // When wheel rotates clockwise by R degrees, a point at angle A moves to (A + R) mod 360
-        // We want: (targetSegmentCenter + finalRotation) mod 360 = 0
-        // So: finalRotation mod 360 = (360 - targetSegmentCenter) mod 360
-        const targetFinalRotationMod360 = (360 - targetSegmentCenter) % 360;
-
-        // Get current rotation normalized to 0-360
-        const currentRotationMod360 = ((rotation % 360) + 360) % 360;
-
-        // Calculate additional rotation needed from current position
-        let additionalRotation = targetFinalRotationMod360 - currentRotationMod360;
-        if (additionalRotation <= 0) {
-            additionalRotation += 360;
-        }
-
-        // Add multiple full rotations for visual effect (5-8 full rotations)
-        const fullRotations = 5 + Math.random() * 3;
-
-        // Calculate final absolute rotation
-        // Start from current rotation, add full rotations, then add the additional rotation needed
-        const finalRotation = rotation + fullRotations * 360 + additionalRotation;
-
-        // Verify: finalRotation mod 360 should equal targetFinalRotationMod360
-        const verification = ((finalRotation % 360) + 360) % 360;
-        if (Math.abs(verification - targetFinalRotationMod360) > 0.1) {
-            console.warn('Rotation calculation mismatch:', {
-                verification,
-                targetFinalRotationMod360,
-                finalRotation,
-            });
-        }
-
-        setRotation(finalRotation);
-
-        // Match the CSS transition duration (3 seconds)
-        const spinDuration = 3000;
-
-        setTimeout(() => {
-            setIsSpinning(false);
-            celebrate(items[targetIndex].name);
-        }, spinDuration);
+        // Spin to the winning item
+        wheelRef.current.spinToItem(
+            winningItemIndex,
+            duration,
+            true, // spinToCenter
+            numberOfRevolutions,
+            direction,
+        );
     };
 
-    // Create conic gradient for wheel background
-    const conicGradient = items
-        .map((item, index) => {
-            const color = item.color || colors[index % colors.length];
-            const startAngle = index * anglePerItem;
-            const endAngle = (index + 1) * anglePerItem;
-            return `${color} ${startAngle}deg ${endAngle}deg`;
-        })
-        .join(', ');
-
     return (
-        <div className="spin-the-wheel-container">
-            <div className="wheel-wrapper">
-                <div className="pointer"></div>
-                <div
-                    ref={wheelRef}
-                    className={`wheel ${isSpinning ? 'spinning' : ''}`}
-                    style={{
-                        transform: `rotate(${rotation}deg)`,
-                        transition: isSpinning ? 'transform 3s cubic-bezier(0.17, 0.67, 0.12, 0.99)' : 'none',
-                        background: `conic-gradient(${conicGradient})`,
-                    }}
-                >
-                    {items.map((item, index) => {
-                        const labelAngle = index * anglePerItem + anglePerItem / 2;
-                        // Convert angle to radians and adjust for CSS coordinates (0deg = top)
-                        const angleRad = ((labelAngle - 90) * Math.PI) / 180;
-                        const labelRadius = 35; // Percentage from center
-                        const labelX = 50 + labelRadius * Math.cos(angleRad);
-                        const labelY = 50 + labelRadius * Math.sin(angleRad);
-
-                        return (
-                            <div
-                                key={index}
-                                className="segment-label"
-                                style={{
-                                    position: 'absolute',
-                                    left: `${labelX}%`,
-                                    top: `${labelY}%`,
-                                    transform: `translate(-50%, -50%) rotate(${labelAngle}deg)`,
-                                    transformOrigin: 'center',
-                                }}
-                            >
-                                {item.name}
-                            </div>
-                        );
-                    })}
-                </div>
-            </div>
-
-            <button className="spin-button" onClick={spin} disabled={isSpinning || items.length === 0}>
-                {isSpinning ? 'Spinning...' : 'Spin the Wheel!'}
+        <div
+            style={{
+                display: 'flex',
+                flexDirection: 'column',
+                // alignItems: 'center',
+                flexGrow: 1,
+                gap: '2rem',
+            }}
+        >
+            <div
+                ref={containerRef}
+                style={{
+                    width: '100%',
+                    // maxWidth: '600px',
+                    aspectRatio: '1',
+                    margin: '0 auto',
+                }}
+            />
+            <button
+                onClick={handleSpin}
+                style={{
+                    padding: '1rem 2rem',
+                    fontSize: '1.25rem',
+                    fontWeight: 'bold',
+                    color: 'white',
+                    backgroundColor: '#667eea',
+                    border: 'none',
+                    borderRadius: '0.5rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                }}
+                onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#5568d3';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 6px 8px rgba(0, 0, 0, 0.15)';
+                }}
+                onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = '#667eea';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+                }}
+            >
+                Spin the Wheel!
             </button>
-
-            {selectedItem && (
+            {isCelebrating && (
                 <div className="celebration-message">
-                    <div className="celebration-text">🎉 {selectedItem} 🎉</div>
+                    <div className="celebration-text">🎉 {winningItemName} 🎉</div>
                 </div>
             )}
         </div>
     );
 }
+
