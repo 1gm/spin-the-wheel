@@ -20,7 +20,7 @@ export default function SpinTheWheel({
   items,
   winningItemName,
   duration = 4000,
-  numberOfRevolutions = 2,
+  numberOfRevolutions = 20,
   direction = 1,
 }: SpinTheWheelProps) {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -29,6 +29,7 @@ export default function SpinTheWheel({
   const [imagesReady, setImagesReady] = useState(false)
   const hasCelebratedRef = useRef(false)
   const [isCelebrating, setIsCelebrating] = useState<boolean>(false)
+  const confettiIntervalRef = useRef<number | null>(null)
 
   // Preload images
   useEffect(() => {
@@ -148,7 +149,7 @@ export default function SpinTheWheel({
   }
 
   const triggerConfetti = () => {
-    const duration = 3000
+    const duration = 10000
     const animationEnd = Date.now() + duration
     const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 }
 
@@ -160,7 +161,7 @@ export default function SpinTheWheel({
       const timeLeft = animationEnd - Date.now()
 
       if (timeLeft <= 0) {
-        setIsCelebrating(false)
+        // Stop confetti but don't dismiss modal - user must click to close
         return clearInterval(interval)
       }
 
@@ -177,6 +178,8 @@ export default function SpinTheWheel({
         origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
       })
     }, 250)
+
+    confettiIntervalRef.current = interval
   }
 
   const celebrate = () => {
@@ -191,6 +194,11 @@ export default function SpinTheWheel({
   }
 
   const handleCloseCelebration = () => {
+    // Clear confetti interval if it's still running
+    if (confettiIntervalRef.current !== null) {
+      clearInterval(confettiIntervalRef.current)
+      confettiIntervalRef.current = null
+    }
     setIsCelebrating(false)
     hasCelebratedRef.current = false
   }
@@ -216,6 +224,11 @@ export default function SpinTheWheel({
       true, // spinToCenter
       numberOfRevolutions,
       direction,
+      (t) => {
+        // Ease out circular sourced from https://easings.net/#easeOutCirc
+        // Note that more functions are available at https://github.com/AndrewRayCode/easing-utils/blob/master/src/easing.js
+        return Math.sqrt(1 - Math.pow(t - 1, 2))
+      },
     )
   }
 

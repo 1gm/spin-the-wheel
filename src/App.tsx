@@ -17,7 +17,7 @@ function App() {
       <SpinTheWheel
         items={items}
         winningItemName="Clare's Shopping Spree"
-        numberOfRevolutions={5 + Math.floor(Math.random() * 10)}
+        numberOfRevolutions={30 + Math.floor(Math.random() * 10)}
       />
     </div>
   )
