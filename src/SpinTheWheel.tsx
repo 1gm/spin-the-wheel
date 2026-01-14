@@ -6,23 +6,17 @@ export interface SpinTheWheelItem {
     name: string;
     color: string;
     image?: HTMLImageElement | string;
+    isWinningItem: boolean;
 }
 
 interface SpinTheWheelProps {
     items: SpinTheWheelItem[];
-    winningItemName: string;
     duration?: number;
     numberOfRevolutions?: number;
     direction?: 1 | -1;
 }
 
-export default function SpinTheWheel({
-    items,
-    winningItemName,
-    duration = 4000,
-    numberOfRevolutions = 20,
-    direction = 1,
-}: SpinTheWheelProps) {
+export default function SpinTheWheel({ items, duration = 4000, numberOfRevolutions = 20, direction = 1 }: SpinTheWheelProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const wheelRef = useRef<Wheel | null>(null);
     const imagesRef = useRef<Map<string, HTMLImageElement>>(new Map());
@@ -199,10 +193,10 @@ export default function SpinTheWheel({
         if (!wheelRef.current) return;
 
         // Find the index of the winning item
-        const winningItemIndex = items.findIndex((item) => item.name === winningItemName);
+        const winningItemIndex = items.findIndex((item) => item.isWinningItem);
 
         if (winningItemIndex === -1) {
-            console.warn(`Winning item "${winningItemName}" not found in items list.`);
+            console.warn('No winning item found in items list.');
             return;
         }
 
@@ -306,7 +300,7 @@ export default function SpinTheWheel({
                             boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
                         }}
                     >
-                        🎉 {winningItemName} 🎉
+                        🎉 {items.find((item) => item.isWinningItem)?.name || 'Winner!'} 🎉
                     </div>
                 </div>
             )}
