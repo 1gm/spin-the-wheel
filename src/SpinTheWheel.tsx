@@ -5,7 +5,6 @@ import confetti from 'canvas-confetti';
 export interface SpinTheWheelItem {
     name: string;
     color: string;
-    image?: HTMLImageElement | string;
     isWinningItem: boolean;
 }
 
@@ -19,75 +18,25 @@ interface SpinTheWheelProps {
 export default function SpinTheWheel({ items, duration = 4000, numberOfRevolutions = 20, direction = 1 }: SpinTheWheelProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const wheelRef = useRef<Wheel | null>(null);
-    const imagesRef = useRef<Map<string, HTMLImageElement>>(new Map());
-    const [imagesReady, setImagesReady] = useState(false);
     const hasCelebratedRef = useRef(false);
     const [isCelebrating, setIsCelebrating] = useState<boolean>(false);
     const confettiIntervalRef = useRef<number | null>(null);
 
-    // Preload images
-    useEffect(() => {
-        setImagesReady(false);
-        imagesRef.current.clear();
-
-        const imagePromises: Promise<void>[] = [];
-
-        items.forEach((item) => {
-            if (item.image && typeof item.image === 'string') {
-                const img = new Image();
-                const promise = new Promise<void>((resolve) => {
-                    img.onload = () => {
-                        imagesRef.current.set(item.name, img);
-                        resolve();
-                    };
-                    img.onerror = () => {
-                        // Continue even if image fails to load
-                        resolve();
-                    };
-                });
-                img.src = item.image;
-                imagePromises.push(promise);
-            } else if (item.image instanceof HTMLImageElement) {
-                imagesRef.current.set(item.name, item.image);
-            }
-        });
-
-        if (imagePromises.length > 0) {
-            Promise.all(imagePromises).then(() => {
-                setImagesReady(true);
-            });
-        } else {
-            setImagesReady(true);
-        }
-    }, [items]);
-
     // Initialize wheel
     useEffect(() => {
-        if (!containerRef.current || !imagesReady) return;
+        if (!containerRef.current) return;
 
         // Convert items to spin-wheel format
         const wheelItems = items.map((item) => {
             const wheelItem: {
                 label: string;
                 backgroundColor?: string;
-                image?: HTMLImageElement;
             } = {
                 label: item.name,
             };
 
             if (item.color) {
                 wheelItem.backgroundColor = item.color;
-            }
-
-            if (item.image) {
-                if (item.image instanceof HTMLImageElement) {
-                    wheelItem.image = item.image;
-                } else if (typeof item.image === 'string') {
-                    const loadedImage = imagesRef.current.get(item.name);
-                    if (loadedImage) {
-                        wheelItem.image = loadedImage;
-                    }
-                }
             }
 
             return wheelItem;
@@ -110,7 +59,7 @@ export default function SpinTheWheel({ items, duration = 4000, numberOfRevolutio
                 wheelRef.current = null;
             }
         };
-    }, [items, imagesReady]);
+    }, [items]);
 
     const playCelebrationSound = () => {
         const audioContext = new (window.AudioContext ||

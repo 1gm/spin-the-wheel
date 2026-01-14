@@ -44,7 +44,6 @@ export const personName: SpinTheWheelItem[] = [
     name: 'Item Name',           // The text displayed on the wheel segment
     color: '#FF6B6B',            // The background color of the segment (hex code)
     isWinningItem: false,        // Set to true for the item that will always win
-    image?: string               // Optional: URL or path to an image
   },
   // ... more items
 ];
@@ -66,7 +65,6 @@ export const andi: SpinTheWheelItem[] = [
 - Only **one item** per person should have `isWinningItem: true`
 - You can add as many items as you want to each person's wheel
 - Colors should be valid hex color codes (e.g., `#FF6B6B`, `#4ECDC4`)
-- The `image` property is optional and can be a URL string or an `HTMLImageElement`
 
 ### Updating Names on the Main Page
 
