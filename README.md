@@ -129,6 +129,56 @@ npm run build
 - `/` - Person selection screen
 - `/:name` - Individual wheel page (e.g., `/sloane`, `/andi`, `/hayden`)
 
+## Deployment to GitHub Pages
+
+This application is configured for easy deployment to GitHub Pages.
+
+### Prerequisites
+
+- A GitHub repository
+- Node.js and npm installed
+
+### Deployment Steps
+
+1. **Update the base path** (if needed):
+   - If your repository name is different from `spin-the-wheel`, update the base path in `vite.config.ts`
+   - Or set the `VITE_BASE_PATH` environment variable when building:
+     ```bash
+     VITE_BASE_PATH=/your-repo-name/ npm run build
+     ```
+
+2. **Deploy to GitHub Pages**:
+   ```bash
+   npm run deploy
+   ```
+
+   This command will:
+   - Build the application for production
+   - Deploy the `dist` folder to the `gh-pages` branch
+   - Make your app available at `https://yourusername.github.io/spin-the-wheel/`
+
+3. **Enable GitHub Pages** (if not already enabled):
+   - Go to your repository settings on GitHub
+   - Navigate to "Pages" in the left sidebar
+   - Under "Source", select the `gh-pages` branch
+   - Click "Save"
+
+4. **Access your deployed app**:
+   - Your app will be available at: `https://yourusername.github.io/spin-the-wheel/`
+   - Note: It may take a few minutes for the changes to propagate
+
+### Custom Domain (Optional)
+
+If you want to use a custom domain:
+1. Update the base path in `vite.config.ts` to `/`
+2. Follow GitHub's instructions for setting up a custom domain
+
+### Troubleshooting
+
+- **404 errors on routes**: Make sure the base path in `vite.config.ts` matches your repository name
+- **Assets not loading**: Verify that the base path includes a trailing slash (e.g., `/spin-the-wheel/`)
+- **Build fails**: Ensure all dependencies are installed with `npm install`
+
 ## License
 
 This is a personal toy project created for Christmas fun. Feel free to use and modify as needed!
