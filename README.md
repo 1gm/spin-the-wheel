@@ -4,7 +4,7 @@ A fun, interactive spin-the-wheel application created as a toy project for Chris
 
 ## Overview
 
-This application provides a beautiful, animated spinning wheel interface where users can:
+Application capabilities include...
 - Select from a predefined list of people
 - Spin a wheel with custom items and colors
 - Watch the wheel spin and land on a guaranteed winning item
