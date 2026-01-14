@@ -1,73 +1,136 @@
-# React + TypeScript + Vite
+# Spin The Wheel 🎡
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A fun, interactive spin-the-wheel application created as a toy project for Christmas. This app allows you to create a spinning wheel with multiple items, where one item is guaranteed to be the winner. Perfect for gift selection, decision making, or just adding some excitement to choosing between options!
 
-Currently, two official plugins are available:
+## Overview
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+This application provides a beautiful, animated spinning wheel interface where users can:
+- Select from a predefined list of people
+- Spin a wheel with custom items and colors
+- Watch the wheel spin and land on a guaranteed winning item
+- Celebrate with confetti and animations when the winner is revealed
 
-## React Compiler
+![Person Selection Screen](docs/imgs/who-is-spinning-the-wheel.png)
 
-The React Compiler is currently not compatible with SWC. See [this issue](https://github.com/vitejs/vite-plugin-react/issues/428) for tracking the progress.
+*The main selection screen where users choose who is spinning the wheel*
 
-## Expanding the ESLint configuration
+![Wheel in Action](docs/imgs/spin-the-wheel-idle.png)
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+*The spinning wheel interface with custom items and colors*
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+![Winner Celebration](docs/imgs/spin-the-wheel-winner.png)
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+*The celebration screen that appears when the wheel lands on the winning item*
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
+## How It Works
+
+1. **Person Selection**: When you first visit the app, you'll see a screen asking "Who is spinning the wheel?" with buttons for each available person.
+
+2. **Wheel Display**: After selecting a person, you'll see their personalized wheel with all their items displayed in colorful segments.
+
+3. **Spinning**: Click the "Spin the Wheel!" button to start the animation. The wheel will spin multiple times before landing on the predetermined winning item.
+
+4. **Celebration**: When the wheel stops, a celebration modal appears with confetti and displays the winning item.
+
+## Customization
+
+### Updating Items on the Wheel
+
+To modify the items displayed on each person's wheel, edit the `src/data.ts` file. Each person has their own array of items with the following structure:
+
+```typescript
+export const personName: SpinTheWheelItem[] = [
+  { 
+    name: 'Item Name',           // The text displayed on the wheel segment
+    color: '#FF6B6B',            // The background color of the segment (hex code)
+    isWinningItem: false,        // Set to true for the item that will always win
+    image?: string               // Optional: URL or path to an image
   },
-])
+  // ... more items
+];
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+**Example:**
+```typescript
+export const andi: SpinTheWheelItem[] = [
+  { name: 'Cinammon Roll Doll', color: '#FF6B6B', isWinningItem: false },
+  { name: 'New Backpack', color: '#4ECDC4', isWinningItem: false },
+  { name: "Tony's Sushi", color: '#45B7D1', isWinningItem: false },
+  { name: `Clare's Shopping Spree`, color: '#573299', isWinningItem: true }, // This will win!
+  { name: 'Amazon Giftcard', color: '#FFA07A', isWinningItem: false },
+  // ... more items
+];
 ```
+
+**Important Notes:**
+- Only **one item** per person should have `isWinningItem: true`
+- You can add as many items as you want to each person's wheel
+- Colors should be valid hex color codes (e.g., `#FF6B6B`, `#4ECDC4`)
+- The `image` property is optional and can be a URL string or an `HTMLImageElement`
+
+### Updating Names on the Main Page
+
+To add, remove, or modify the names that appear on the person selection screen, edit the `personNames` array in `src/data.ts`:
+
+```typescript
+export const personNames = ['andi', 'sloane', 'hayden'] as const;
+```
+
+**To add a new person:**
+1. Create a new array in `src/data.ts` with their items (following the same structure as existing people)
+2. Add the new person's data to the `personData` object:
+   ```typescript
+   export const personData: Record<string, SpinTheWheelItem[]> = {
+     andi,
+     sloane,
+     hayden,
+     newPerson,  // Add your new person here
+   };
+   ```
+3. Add their name to the `personNames` array:
+   ```typescript
+   export const personNames = ['andi', 'sloane', 'hayden', 'newPerson'] as const;
+   ```
+
+**To remove a person:**
+1. Remove their array from `src/data.ts`
+2. Remove them from the `personData` object
+3. Remove their name from the `personNames` array
+
+**To rename a person:**
+1. Update their name in the `personNames` array
+2. Update the key in the `personData` object to match
+3. Optionally rename the exported array variable (though this is not required)
+
+## Development
+
+### Getting Started
+
+```bash
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
+```
+
+### Tech Stack
+
+- **React** - UI framework
+- **TypeScript** - Type safety
+- **React Router** - Client-side routing
+- **Vite** - Build tool and dev server
+- **spin-wheel** - Wheel animation library
+- **canvas-confetti** - Celebration animations
+
+## Routes
+
+- `/` - Person selection screen
+- `/:name` - Individual wheel page (e.g., `/sloane`, `/andi`, `/hayden`)
+
+## License
+
+This is a personal toy project created for Christmas fun. Feel free to use and modify as needed!
