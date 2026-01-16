@@ -1,6 +1,8 @@
 # Spin The Wheel 🎡
 
-A fun, interactive spin-the-wheel application created as a toy project for Christmas. This app allows you to create a spinning wheel with multiple items, where one item is guaranteed to be the winner. Perfect for gift selection, decision making, or just adding some excitement to choosing between options!
+A spin-the-wheel application created as a toy project for Christmas. This app allows you to create a spinning wheel with multiple items, where one item is guaranteed to be the winner. 
+
+Check out the preview [here](https://1gm.github.io/spin-the-wheel/).
 
 ## Overview
 
